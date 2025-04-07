@@ -31,7 +31,7 @@ export default function RootLayout({
         <ColorSchemeScript />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <MantineProvider>
+        <MantineProvider defaultColorScheme="light">
           <Notifications />
           {children}
         </MantineProvider>
