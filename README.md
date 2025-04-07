@@ -75,6 +75,8 @@ A modern web application built with Next.js for accountants to send document req
 
 ## Building for Production
 
+This project is configured for static HTML export. When you build the project, it will generate static files in the `out` directory.
+
 ```bash
 # Using npm
 npm run build
@@ -82,6 +84,31 @@ npm run build
 # Using bun
 bun run build
 ```
+
+The static files will be generated in the `out` directory and can be deployed to any static hosting service.
+
+## Deployment
+
+You can deploy this application to various static hosting platforms:
+
+### Cloudflare Pages
+
+1. Push your code to GitHub
+2. Log in to Cloudflare Dashboard
+3. Go to Pages > Connect to Git
+4. Select your repository
+5. Configure your build settings:
+   - Framework preset: Next.js
+   - Build command: `npm run build`
+   - Build output directory: `out`
+
+### Other Static Hosting
+
+Since this is a static export, you can deploy the contents of the `out` directory to any static hosting service like:
+- Vercel
+- Netlify
+- GitHub Pages
+- Any static file hosting
 
 ## Contributing
 
