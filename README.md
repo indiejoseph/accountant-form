@@ -1,36 +1,101 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Accountant Form
+
+A modern web application built with Next.js for accountants to send document request forms to their clients. The form provides an organized way to collect various financial and business documents required for auditing purposes.
+
+## Features
+
+- Client and period information collection
+- Organized document sections:
+  - General management accounts
+  - Statutory records
+  - Property, Plant & Equipment
+  - Accounts Receivables
+  - Cash & Equivalent
+  - Accounts Payables
+  - Revenue
+  - Administrative Expense
+  - Payroll
+  - Others
+  - Consolidation
+- Progress tracking
+- File upload support with size and type validation
+- Real-time form validation
+- Responsive design
+
+## Tech Stack
+
+- [Next.js](https://nextjs.org/) - React framework
+- [Mantine UI](https://mantine.dev/) - Component library
+- [React Hook Form](https://react-hook-form.com/) - Form validation
+- [Zod](https://zod.dev/) - Schema validation
+- [TypeScript](https://www.typescriptlang.org/) - Type safety
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+ or [Bun](https://bun.sh/)
+- npm or bun package manager
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone [your-repo-url]
+   cd accountant-form
+   ```
+
+2. Install dependencies:
+   ```bash
+   # Using npm
+   npm install
+
+   # Using bun
+   bun install
+   ```
+
+3. Run the development server:
+   ```bash
+   # Using npm
+   npm run dev
+
+   # Using bun
+   bun dev
+   ```
+
+4. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Usage
+
+1. Enter client name and period information
+2. Navigate through different sections using the accordion
+3. Upload required documents in each section
+4. Track progress through the progress bar
+5. Submit the form when all sections are completed
+
+## Building for Production
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Using npm
+npm run build
+
+# Using bun
+bun run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Contributing
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## License
 
-## Learn More
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-To learn more about Next.js, take a look at the following resources:
+## Acknowledgments
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Mantine UI Documentation](https://mantine.dev/guides/next)
