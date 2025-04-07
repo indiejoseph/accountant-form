@@ -70,6 +70,7 @@ function FileUploadField({ name, label, description, setValue, error }: FieldPro
       maxSize={MAX_FILE_SIZE}
       accept={["image/png", "image/jpeg", "image/gif", "application/pdf"]}
       mb="md"
+      style={{ cursor: "pointer" }}
     >
       <Group wrap="nowrap" gap="xl" mih={100} style={{ pointerEvents: "none" }}>
         <Group align="center" wrap="nowrap">

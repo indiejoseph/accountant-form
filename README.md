@@ -70,6 +70,11 @@ The project's `package.json` includes engine specifications to ensure the correc
 ## Usage
 
 1. Enter client name and period information
+   - You can pre-fill these fields using URL parameters:
+   - Example: `/?client=ACME%20Inc&period=2024-2025`
+   - Parameters:
+     - `client`: Client name
+     - `period`: Accounting period
 2. Navigate through different sections using the accordion
 3. Upload required documents in each section
 4. Track progress through the progress bar

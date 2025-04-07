@@ -39,10 +39,16 @@ import {
   IconUsers,
   IconX,
 } from "@tabler/icons-react";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { type FormValues, renderFormSection } from "./FormSections";
+
+function getDefaultPeriod() {
+  const currentYear = new Date().getFullYear();
+  return `${currentYear - 1}-${currentYear}`;
+}
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -125,6 +131,7 @@ export function AccountantForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedSections, setCompletedSections] = useState<string[]>([]);
 
+  const searchParams = useSearchParams();
   const {
     register,
     handleSubmit,
@@ -133,7 +140,18 @@ export function AccountantForm() {
     getValues,
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      client: searchParams.get("client") || "",
+      period: searchParams.get("period") || getDefaultPeriod(),
+      sections: {},
+    },
   });
+
+  // Update form values when URL params change
+  useEffect(() => {
+    setValue("client", searchParams.get("client") || "");
+    setValue("period", searchParams.get("period") || getDefaultPeriod());
+  }, [searchParams, setValue]);
 
   return (
     <Container size="lg" py="xl">
@@ -202,7 +220,7 @@ export function AccountantForm() {
               <Box>
                 <TextInput
                   label="Period"
-                  placeholder="Enter period (e.g., 2024-2025)"
+                  placeholder={`Enter period (e.g., ${getDefaultPeriod()})`}
                   error={errors.period?.message}
                   {...register("period")}
                 />
