@@ -1,0 +1,11 @@
+chore: add static export support
+
+- Add suspense boundary for useSearchParams in form
+- Update dropzone cursor and UI feedback
+- Fix light mode color scheme consistency
+- Add default period handling using current year
+- Add URL parameter support for client and period
+- Update Node.js version for deployment
+
+This ensures proper static export support while improving the
+form's usability and appearance.

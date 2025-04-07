@@ -3,7 +3,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Accordion,
-  ActionIcon,
   Box,
   Button,
   Container,
@@ -17,9 +16,7 @@ import {
   ThemeIcon,
   Title,
   Tooltip,
-  rem,
 } from "@mantine/core";
-import { Dropzone } from "@mantine/dropzone";
 import { notifications } from "@mantine/notifications";
 import {
   IconBuilding,
@@ -27,17 +24,13 @@ import {
   IconChartBar,
   IconCheck,
   IconCreditCard,
-  IconFile,
   IconFileText,
   IconFiles,
   IconFolders,
   IconReceipt,
   IconReportMoney,
   IconTools,
-  IconTrash,
-  IconUpload,
   IconUsers,
-  IconX,
 } from "@tabler/icons-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -49,8 +42,6 @@ function getDefaultPeriod() {
   const currentYear = new Date().getFullYear();
   return `${currentYear - 1}-${currentYear}`;
 }
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const formSchema = z.object({
   client: z.string().min(1, "Client name is required"),
