@@ -32,5 +32,9 @@
     "@types/react-dom": "^19",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": "20.0.0",
+    "npm": "9.6.7"
   }
 }

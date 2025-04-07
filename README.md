@@ -34,8 +34,10 @@ A modern web application built with Next.js for accountants to send document req
 
 ### Prerequisites
 
-- Node.js 18+ or [Bun](https://bun.sh/)
-- npm or bun package manager
+- Node.js 20.0.0 (required for Next.js 15.x)
+- npm 9.6.7
+
+The project's `package.json` includes engine specifications to ensure the correct Node.js and npm versions are used. If you see any version-related errors, make sure your Node.js and npm versions match these requirements exactly.
 
 ### Installation
 
@@ -101,6 +103,15 @@ You can deploy this application to various static hosting platforms:
    - Framework preset: Next.js
    - Build command: `npm run build`
    - Build output directory: `out`
+
+6. Set environment variables:
+   - In the Cloudflare Pages settings, go to "Settings" > "Environment variables"
+   - Add a new variable:
+     - Variable name: `NODE_VERSION`
+     - Value: `20.0.0`
+   - Set to: "Production" and "Preview"
+
+Note: Setting the `NODE_VERSION` environment variable in Cloudflare Pages ensures the correct Node.js version is used during deployment, regardless of any local configuration files.
 
 ### Other Static Hosting
 
