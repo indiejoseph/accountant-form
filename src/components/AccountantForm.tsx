@@ -34,7 +34,7 @@ import {
   IconUsers,
 } from "@tabler/icons-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { type FormValues, renderFormSection } from "./FormSections";
@@ -127,9 +127,11 @@ const formSections = [
 export function AccountantForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedSections, setCompletedSections] = useState<string[]>([]);
+  const [applicableSections, setApplicableSections] = useState<Record<string, boolean>>({});
 
   const router = useRouter();
   const searchParams = useSearchParams();
+
   const {
     register,
     handleSubmit,
@@ -143,9 +145,8 @@ export function AccountantForm() {
       period: searchParams.get("period") || getDefaultPeriod(),
       sections: formSections.reduce(
         (acc, section) => {
-          const isApplicable = searchParams.get(section.value) !== "false";
           acc[section.value] = {
-            isApplicable,
+            isApplicable: true,
             files: {},
           };
           return acc;
@@ -155,11 +156,39 @@ export function AccountantForm() {
     },
   });
 
+  const handleApplicabilityChange = useCallback(
+    (sectionValue: string, isApplicable: boolean) => {
+      setApplicableSections((prev) => ({ ...prev, [sectionValue]: isApplicable }));
+      setValue(`sections.${sectionValue}`, {
+        isApplicable,
+        files: getValues(`sections.${sectionValue}.files`) || {},
+      });
+      if (!isApplicable) {
+        setCompletedSections((prev) => prev.filter((s) => s !== sectionValue));
+      }
+    },
+    [setValue, getValues]
+  );
+
+  // Initialize applicability state from URL params
+  useEffect(() => {
+    const newApplicability: Record<string, boolean> = {};
+    for (const section of formSections) {
+      const isApplicable = searchParams.get(section.value) !== "false";
+      newApplicability[section.value] = isApplicable;
+      setValue(`sections.${section.value}.isApplicable`, isApplicable);
+    }
+    setApplicableSections(newApplicability);
+  }, [searchParams, setValue]);
+
   // Update form values when URL params change
   useEffect(() => {
     setValue("client", searchParams.get("client") || "");
     setValue("period", searchParams.get("period") || getDefaultPeriod());
   }, [searchParams, setValue]);
+
+  const visibleSections = formSections.filter((s) => searchParams.get(s.value) !== "false");
+  const visibleApplicableSections = visibleSections.filter((s) => applicableSections[s.value]);
 
   return (
     <Container size="lg" py="xl">
@@ -170,25 +199,15 @@ export function AccountantForm() {
 
         <Stack gap="xs" mb="lg">
           <Progress
-            value={
-              (completedSections.length /
-                formSections.filter((s) => getValues(`sections.${s.value}.isApplicable`)).length) *
-              100
-            }
+            value={(completedSections.length / visibleApplicableSections.length) * 100}
             size="sm"
-            color={
-              completedSections.length ===
-              formSections.filter((s) => searchParams.get(s.value) !== "false").length
-                ? "green"
-                : "blue"
-            }
+            color={completedSections.length === visibleApplicableSections.length ? "green" : "blue"}
             radius="xl"
             striped
             animated={completedSections.length > 0}
           />
           <Text size="sm" c="dimmed" ta="right">
-            Completed sections: {completedSections.length} /{" "}
-            {formSections.filter((s) => searchParams.get(s.value) !== "false").length}
+            Completed sections: {completedSections.length} / {visibleApplicableSections.length}
           </Text>
         </Stack>
 
@@ -198,12 +217,8 @@ export function AccountantForm() {
             try {
               // Simulate API call
               await new Promise((resolve) => setTimeout(resolve, 2000));
-              // Mark visible sections as completed
-              setCompletedSections(
-                formSections
-                  .filter((section) => searchParams.get(section.value) !== "false")
-                  .map((section) => section.value)
-              );
+              // Mark applicable sections as completed
+              setCompletedSections(visibleApplicableSections.map((s) => s.value));
               console.log("Form data with files:", data);
               notifications.show({
                 title: "Success",
@@ -254,49 +269,61 @@ export function AccountantForm() {
             transitionDuration={200}
             chevronPosition="left"
           >
-            {formSections
-              .filter((section) => searchParams.get(section.value) !== "false")
-              .map((section) => (
-                <Accordion.Item key={section.value} value={section.value}>
-                  <Accordion.Control>
-                    <Group gap="xs" justify="space-between" w="100%">
-                      <Group gap="xs">
-                        <section.icon size={20} />
-                        <div>
-                          <Text fw={500}>{section.label}</Text>
-                          <Text size="sm" c="dimmed">
-                            {section.description}
-                          </Text>
-                        </div>
-                      </Group>
-                      {completedSections.includes(section.value) && (
-                        <ThemeIcon color="green" size="sm" variant="light">
-                          <IconCheck size={14} />
-                        </ThemeIcon>
-                      )}
+            {visibleSections.map((section) => (
+              <Accordion.Item key={section.value} value={section.value}>
+                <Accordion.Control>
+                  <Group gap="xs" justify="space-between" w="100%">
+                    <Group gap="xs">
+                      <section.icon size={20} />
+                      <div>
+                        <Text fw={500}>{section.label}</Text>
+                        <Text size="sm" c="dimmed">
+                          {section.description}
+                        </Text>
+                      </div>
                     </Group>
-                  </Accordion.Control>
-                  <Accordion.Panel p="md">
-                    <Stack gap="md">
-                      {renderFormSection(
-                        section.value,
-                        register,
-                        setValue,
-                        errors,
-                        (section, isComplete) => {
-                          if (isComplete) {
-                            setCompletedSections((prev) =>
-                              prev.includes(section) ? prev : [...prev, section]
-                            );
-                          } else {
-                            setCompletedSections((prev) => prev.filter((s) => s !== section));
+                    {completedSections.includes(section.value) && (
+                      <ThemeIcon color="green" size="sm" variant="light">
+                        <IconCheck size={14} />
+                      </ThemeIcon>
+                    )}
+                  </Group>
+                </Accordion.Control>
+                <Accordion.Panel p="md">
+                  <Stack gap="lg">
+                    <Group>
+                      <Text>Would this section be applicable to you?</Text>
+                      <Switch
+                        checked={applicableSections[section.value]}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          handleApplicabilityChange(section.value, e.currentTarget.checked);
+                        }}
+                      />
+                    </Group>
+                    {applicableSections[section.value] && (
+                      <Stack gap="md">
+                        {renderFormSection(
+                          section.value,
+                          register,
+                          setValue,
+                          errors,
+                          (section, isComplete) => {
+                            if (isComplete) {
+                              setCompletedSections((prev) =>
+                                prev.includes(section) ? prev : [...prev, section]
+                              );
+                            } else {
+                              setCompletedSections((prev) => prev.filter((s) => s !== section));
+                            }
                           }
-                        }
-                      )}
-                    </Stack>
-                  </Accordion.Panel>
-                </Accordion.Item>
-              ))}
+                        )}
+                      </Stack>
+                    )}
+                  </Stack>
+                </Accordion.Panel>
+              </Accordion.Item>
+            ))}
           </Accordion>
 
           <Stack mt="xl" mb="md">
@@ -305,15 +332,13 @@ export function AccountantForm() {
                 label={
                   !getValues("client") ||
                   !getValues("period") ||
-                  completedSections.length !==
-                    formSections.filter((s) => searchParams.get(s.value) !== "false").length
-                    ? "Please fill in all required fields and complete all sections before submitting"
+                  completedSections.length !== visibleApplicableSections.length
+                    ? "Please fill in all required fields and complete all applicable sections before submitting"
                     : ""
                 }
                 position="top"
                 disabled={Boolean(
-                  completedSections.length ===
-                    formSections.filter((s) => searchParams.get(s.value) !== "false").length &&
+                  completedSections.length === visibleApplicableSections.length &&
                     getValues("client") &&
                     getValues("period")
                 )}
@@ -326,9 +351,7 @@ export function AccountantForm() {
                     isSubmitting ||
                     !getValues("client") ||
                     !getValues("period") ||
-                    !formSections
-                      .filter((s) => searchParams.get(s.value) !== "false")
-                      .every((section) => completedSections.includes(section.value))
+                    completedSections.length !== visibleApplicableSections.length
                   }
                 >
                   Submit
