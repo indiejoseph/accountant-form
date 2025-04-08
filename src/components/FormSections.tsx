@@ -18,10 +18,34 @@ interface FieldProps {
 export interface FormValues {
   client: string;
   period: string;
-  sections: Record<string, Record<string, File | undefined>>;
+  sections: Record<
+    string,
+    {
+      isApplicable: boolean;
+      files: Record<string, File | undefined>;
+    }
+  >;
 }
 
-function FileUploadField({ name, label, description, setValue, error }: FieldProps) {
+type OnUpdateComplete = (section: string, isComplete: boolean) => void;
+
+interface FieldProps {
+  name: string;
+  label: string;
+  description: string;
+  setValue: UseFormSetValue<FormValues>;
+  onUpdateComplete?: OnUpdateComplete;
+  error?: { message?: string };
+}
+
+function FileUploadField({
+  name,
+  label,
+  description,
+  setValue,
+  onUpdateComplete,
+  error,
+}: FieldProps) {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -35,8 +59,9 @@ function FileUploadField({ name, label, description, setValue, error }: FieldPro
             const file = files[0];
             // Simulate upload delay
             await new Promise((resolve) => setTimeout(resolve, 1000));
-            setValue(`sections.${section}`, { [field]: file } as FormValues["sections"][string]);
+            setValue(`sections.${section}.files`, { [field]: file });
             setUploadedFile(file);
+            onUpdateComplete?.(section, true);
             notifications.show({
               title: "File uploaded",
               message: `Successfully uploaded ${file.name}`,
@@ -135,9 +160,10 @@ function FileUploadField({ name, label, description, setValue, error }: FieldPro
                     e.stopPropagation();
                     setUploadedFile(null);
                     const [section, field] = name.split(".");
-                    setValue(`sections.${section}`, {
+                    setValue(`sections.${section}.files`, {
                       [field]: undefined,
-                    } as FormValues["sections"][string]);
+                    });
+                    onUpdateComplete?.(section, false);
                     notifications.show({
                       title: "File removed",
                       message: "File has been removed",
@@ -165,7 +191,8 @@ export function renderFormSection(
   section: string,
   register: UseFormRegister<FormValues>,
   setValue: UseFormSetValue<FormValues>,
-  errors: Record<string, { message?: string }>
+  errors: Record<string, { message?: string }>,
+  onUpdateComplete?: OnUpdateComplete
 ) {
   const getFields = () => {
     switch (section) {
@@ -410,6 +437,7 @@ export function renderFormSection(
       label={field.label}
       description={field.description}
       setValue={setValue}
+      onUpdateComplete={onUpdateComplete}
       error={errors[field.name]}
     />
   ));
