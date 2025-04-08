@@ -10,10 +10,12 @@ import {
   LoadingOverlay,
   Paper,
   Progress,
+  Select,
   Stack,
   Switch,
   Text,
   TextInput,
+  Textarea,
   ThemeIcon,
   Title,
   Tooltip,
@@ -51,6 +53,7 @@ const formSchema = z.object({
     z.object({
       isApplicable: z.boolean(),
       files: z.record(z.instanceof(File).optional()),
+      remark: z.string(),
     })
   ),
 }) satisfies z.ZodType<FormValues>;
@@ -132,6 +135,18 @@ export function AccountantForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const titleOptions = [
+    { value: "audit", label: "Audit Documents Request List" },
+    { value: "due-diligence", label: "Financial Due Diligence Checklist" },
+  ];
+
+  const handleTitleChange = (value: string | null) => {
+    if (!value) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("type", value);
+    router.replace(`?${params.toString()}`);
+  };
+
   const {
     register,
     handleSubmit,
@@ -148,6 +163,7 @@ export function AccountantForm() {
           acc[section.value] = {
             isApplicable: true,
             files: {},
+            remark: "",
           };
           return acc;
         },
@@ -162,6 +178,7 @@ export function AccountantForm() {
       setValue(`sections.${sectionValue}`, {
         isApplicable,
         files: getValues(`sections.${sectionValue}.files`) || {},
+        remark: getValues(`sections.${sectionValue}.remark`) || "",
       });
       if (!isApplicable) {
         setCompletedSections((prev) => prev.filter((s) => s !== sectionValue));
@@ -187,27 +204,43 @@ export function AccountantForm() {
     setValue("period", searchParams.get("period") || getDefaultPeriod());
   }, [searchParams, setValue]);
 
-  const visibleSections = formSections.filter((s) => searchParams.get(s.value) !== "false");
-  const visibleApplicableSections = visibleSections.filter((s) => applicableSections[s.value]);
+  const applicableSectionCount = formSections.filter((s) => applicableSections[s.value]).length;
 
   return (
     <Container size="lg" py="xl">
       <Paper shadow="sm" radius="md" p="xl" withBorder>
-        <Title order={2} mb="md">
-          {searchParams.get("title") || "Audit Documents Request List"}
-        </Title>
+        <Stack gap="md" mb="xl">
+          <Select
+            size="lg"
+            label="Document Type"
+            placeholder="Select document type"
+            data={titleOptions}
+            defaultValue={searchParams.get("type") || "audit"}
+            onChange={handleTitleChange}
+            styles={(theme) => ({
+              input: {
+                fontSize: theme.fontSizes.lg,
+                fontWeight: 500,
+              },
+              label: {
+                fontSize: theme.fontSizes.sm,
+                marginBottom: theme.spacing.xs,
+              },
+            })}
+          />
+        </Stack>
 
         <Stack gap="xs" mb="lg">
           <Progress
-            value={(completedSections.length / visibleApplicableSections.length) * 100}
+            value={(completedSections.length / applicableSectionCount) * 100}
             size="sm"
-            color={completedSections.length === visibleApplicableSections.length ? "green" : "blue"}
+            color={completedSections.length === applicableSectionCount ? "green" : "blue"}
             radius="xl"
             striped
             animated={completedSections.length > 0}
           />
           <Text size="sm" c="dimmed" ta="right">
-            Completed sections: {completedSections.length} / {visibleApplicableSections.length}
+            Completed sections: {completedSections.length} / {applicableSectionCount}
           </Text>
         </Stack>
 
@@ -218,7 +251,9 @@ export function AccountantForm() {
               // Simulate API call
               await new Promise((resolve) => setTimeout(resolve, 2000));
               // Mark applicable sections as completed
-              setCompletedSections(visibleApplicableSections.map((s) => s.value));
+              setCompletedSections(
+                formSections.filter((s) => applicableSections[s.value]).map((s) => s.value)
+              );
               console.log("Form data with files:", data);
               notifications.show({
                 title: "Success",
@@ -269,14 +304,23 @@ export function AccountantForm() {
             transitionDuration={200}
             chevronPosition="left"
           >
-            {visibleSections.map((section) => (
+            {formSections.map((section) => (
               <Accordion.Item key={section.value} value={section.value}>
                 <Accordion.Control>
                   <Group gap="xs" justify="space-between" w="100%">
                     <Group gap="xs">
                       <section.icon size={20} />
                       <div>
-                        <Text fw={500}>{section.label}</Text>
+                        <Text
+                          fw={500}
+                          style={{
+                            textDecoration:
+                              searchParams.get(section.value) === "false" ? "line-through" : "none",
+                          }}
+                        >
+                          {section.label}
+                          {searchParams.get(section.value) === "false" && " (Not Applicable)"}
+                        </Text>
                         <Text size="sm" c="dimmed">
                           {section.description}
                         </Text>
@@ -291,16 +335,23 @@ export function AccountantForm() {
                 </Accordion.Control>
                 <Accordion.Panel p="md">
                   <Stack gap="lg">
-                    <Group>
-                      <Text>Would this section be applicable to you?</Text>
-                      <Switch
-                        checked={applicableSections[section.value]}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          handleApplicabilityChange(section.value, e.currentTarget.checked);
-                        }}
+                    <Stack gap="md">
+                      <Group>
+                        <Text>Would this section be applicable to you?</Text>
+                        <Switch
+                          checked={applicableSections[section.value]}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleApplicabilityChange(section.value, e.currentTarget.checked);
+                          }}
+                        />
+                      </Group>
+                      <Textarea
+                        label="Remarks"
+                        placeholder="Add any notes or remarks about this section"
+                        {...register(`sections.${section.value}.remark`)}
                       />
-                    </Group>
+                    </Stack>
                     {applicableSections[section.value] && (
                       <Stack gap="md">
                         {renderFormSection(
@@ -332,13 +383,13 @@ export function AccountantForm() {
                 label={
                   !getValues("client") ||
                   !getValues("period") ||
-                  completedSections.length !== visibleApplicableSections.length
+                  completedSections.length !== applicableSectionCount
                     ? "Please fill in all required fields and complete all applicable sections before submitting"
                     : ""
                 }
                 position="top"
                 disabled={Boolean(
-                  completedSections.length === visibleApplicableSections.length &&
+                  completedSections.length === applicableSectionCount &&
                     getValues("client") &&
                     getValues("period")
                 )}
@@ -351,7 +402,7 @@ export function AccountantForm() {
                     isSubmitting ||
                     !getValues("client") ||
                     !getValues("period") ||
-                    completedSections.length !== visibleApplicableSections.length
+                    completedSections.length !== applicableSectionCount
                   }
                 >
                   Submit

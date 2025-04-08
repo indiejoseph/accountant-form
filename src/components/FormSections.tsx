@@ -23,6 +23,7 @@ export interface FormValues {
     {
       isApplicable: boolean;
       files: Record<string, File | undefined>;
+      remark: string;
     }
   >;
 }
