@@ -3,6 +3,8 @@ import { AccountantForm } from "@/components/AccountantForm";
 import { Container, LoadingOverlay } from "@mantine/core";
 import { Suspense } from "react";
 
+export const runtime = "edge";
+
 // Default table ID for the root page (first sheet in the workbook)
 const DEFAULT_TABLE_ID = "0";
 
