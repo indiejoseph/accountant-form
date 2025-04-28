@@ -3,6 +3,8 @@ import { Container, LoadingOverlay } from "@mantine/core";
 import { parse } from "csv-parse/sync";
 import { Suspense } from "react";
 
+export const runtime = "edge";
+
 interface FormField {
   label: string;
   description: string;
