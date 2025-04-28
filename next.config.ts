@@ -6,7 +6,6 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true, // Since we're using Biome
   },
   transpilePackages: ["@mantine/core", "@mantine/hooks", "@mantine/form"],
-  output: "export",
   images: {
     unoptimized: true,
   },

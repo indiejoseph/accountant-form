@@ -1,5 +1,6 @@
 "use client";
 
+import type { FormConfig } from "@/app/[id]/page";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Accordion,
@@ -10,7 +11,6 @@ import {
   LoadingOverlay,
   Paper,
   Progress,
-  Select,
   Stack,
   Switch,
   Text,
@@ -35,8 +35,8 @@ import {
   IconTools,
   IconUsers,
 } from "@tabler/icons-react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import React, { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { type FormValues, renderFormSection } from "./FormSections";
@@ -44,6 +44,16 @@ import { type FormValues, renderFormSection } from "./FormSections";
 function getDefaultPeriod() {
   const currentYear = new Date().getFullYear();
   return `${currentYear - 1}-${currentYear}`;
+}
+
+interface FormSection {
+  value: string;
+  label: string;
+  description: string;
+  fields: Array<{
+    label: string;
+    description: string;
+  }>;
 }
 
 const formSchema = z.object({
@@ -58,94 +68,34 @@ const formSchema = z.object({
   ),
 }) satisfies z.ZodType<FormValues>;
 
-const formSections = [
-  {
-    label: "General",
-    value: "general",
-    description: "Management accounts and basic information",
-    icon: IconFileText,
-  },
-  {
-    label: "Statutory Record",
-    value: "statutoryRecord",
-    description: "Business registration and company documents",
-    icon: IconBuilding,
-  },
-  {
-    label: "Property, Plant & Equipment",
-    value: "propertyPlantEquipment",
-    description: "Fixed assets and insurance details",
-    icon: IconTools,
-  },
-  {
-    label: "Accounts Receivables",
-    value: "accountsReceivables",
-    description: "Aging and settlements",
-    icon: IconReceipt,
-  },
-  {
-    label: "Cash & Equivalent",
-    value: "cashAndEquivalent",
-    description: "Bank statements and reconciliations",
-    icon: IconCash,
-  },
-  {
-    label: "Accounts Payables",
-    value: "accountsPayables",
-    description: "Payment vouchers and aging",
-    icon: IconCreditCard,
-  },
-  {
-    label: "Revenue",
-    value: "revenue",
-    description: "Sales records and income details",
-    icon: IconChartBar,
-  },
-  {
-    label: "Administrative Expense",
-    value: "adminExpense",
-    description: "Rental and management fees",
-    icon: IconReportMoney,
-  },
-  {
-    label: "Payroll",
-    value: "payroll",
-    description: "Salary and employment forms",
-    icon: IconUsers,
-  },
-  {
-    label: "Others",
-    value: "others",
-    description: "Tax returns and correspondence",
-    icon: IconFolders,
-  },
-  {
-    label: "Consolidation",
-    value: "consolidation",
-    description: "Spreadsheets and trial balance",
-    icon: IconFiles,
-  },
-];
+const sectionIcons: Record<string, typeof IconFileText> = {
+  general: IconFileText,
+  statutoryRecord: IconBuilding,
+  propertyPlantEquipment: IconTools,
+  accountsReceivables: IconReceipt,
+  cashAndEquivalent: IconCash,
+  accountsPayables: IconCreditCard,
+  revenue: IconChartBar,
+  adminExpense: IconReportMoney,
+  payroll: IconUsers,
+  others: IconFolders,
+  consolidation: IconFiles,
+};
 
-export function AccountantForm() {
+const getDefaultIcon = (sectionName: string) => {
+  return sectionIcons[sectionName] || IconFileText;
+};
+
+interface AccountantFormProps {
+  initialConfig: FormConfig;
+}
+
+export function AccountantForm({ initialConfig }: AccountantFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedSections, setCompletedSections] = useState<string[]>([]);
   const [applicableSections, setApplicableSections] = useState<Record<string, boolean>>({});
 
-  const router = useRouter();
   const searchParams = useSearchParams();
-
-  const titleOptions = [
-    { value: "audit", label: "Audit Documents Request List" },
-    { value: "due-diligence", label: "Financial Due Diligence Checklist" },
-  ];
-
-  const handleTitleChange = (value: string | null) => {
-    if (!value) return;
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("type", value);
-    router.replace(`?${params.toString()}`);
-  };
 
   const {
     register,
@@ -158,16 +108,16 @@ export function AccountantForm() {
     defaultValues: {
       client: searchParams.get("client") || "",
       period: searchParams.get("period") || getDefaultPeriod(),
-      sections: formSections.reduce(
-        (acc, section) => {
-          acc[section.value] = {
+      sections: Object.keys(initialConfig.fields).reduce(
+        (acc: FormValues["sections"], sectionName) => {
+          acc[sectionName] = {
             isApplicable: true,
             files: {},
             remark: "",
           };
           return acc;
         },
-        {} as FormValues["sections"]
+        {}
       ),
     },
   });
@@ -190,13 +140,13 @@ export function AccountantForm() {
   // Initialize applicability state from URL params
   useEffect(() => {
     const newApplicability: Record<string, boolean> = {};
-    for (const section of formSections) {
-      const isApplicable = searchParams.get(section.value) !== "false";
-      newApplicability[section.value] = isApplicable;
-      setValue(`sections.${section.value}.isApplicable`, isApplicable);
+    for (const sectionName of Object.keys(initialConfig.fields)) {
+      const isApplicable = searchParams.get(sectionName) !== "false";
+      newApplicability[sectionName] = isApplicable;
+      setValue(`sections.${sectionName}.isApplicable`, isApplicable);
     }
     setApplicableSections(newApplicability);
-  }, [searchParams, setValue]);
+  }, [searchParams, setValue, initialConfig.fields]);
 
   // Update form values when URL params change
   useEffect(() => {
@@ -204,33 +154,15 @@ export function AccountantForm() {
     setValue("period", searchParams.get("period") || getDefaultPeriod());
   }, [searchParams, setValue]);
 
-  const applicableSectionCount = formSections.filter((s) => applicableSections[s.value]).length;
+  const applicableSectionCount = Object.keys(initialConfig.fields).filter(
+    (s) => applicableSections[s]
+  ).length;
 
   return (
     <Container size="lg" py="xl">
       <Paper shadow="sm" radius="md" p="xl" withBorder>
-        <Stack gap="md" mb="xl">
-          <Select
-            size="lg"
-            label="Document Type"
-            placeholder="Select document type"
-            data={titleOptions}
-            defaultValue={searchParams.get("type") || "audit"}
-            onChange={handleTitleChange}
-            styles={(theme) => ({
-              input: {
-                fontSize: theme.fontSizes.lg,
-                fontWeight: 500,
-              },
-              label: {
-                fontSize: theme.fontSizes.sm,
-                marginBottom: theme.spacing.xs,
-              },
-            })}
-          />
-        </Stack>
-
         <Stack gap="xs" mb="lg">
+          <Title order={3}>Request List</Title>
           <Progress
             value={(completedSections.length / applicableSectionCount) * 100}
             size="sm"
@@ -252,7 +184,7 @@ export function AccountantForm() {
               await new Promise((resolve) => setTimeout(resolve, 2000));
               // Mark applicable sections as completed
               setCompletedSections(
-                formSections.filter((s) => applicableSections[s.value]).map((s) => s.value)
+                Object.keys(initialConfig.fields).filter((s) => applicableSections[s])
               );
               console.log("Form data with files:", data);
               notifications.show({
@@ -304,29 +236,31 @@ export function AccountantForm() {
             transitionDuration={200}
             chevronPosition="left"
           >
-            {formSections.map((section) => (
-              <Accordion.Item key={section.value} value={section.value}>
+            {Object.entries(initialConfig.fields).map(([sectionName, fields]) => (
+              <Accordion.Item key={sectionName} value={sectionName}>
                 <Accordion.Control>
                   <Group gap="xs" justify="space-between" w="100%">
                     <Group gap="xs">
-                      <section.icon size={20} />
+                      <ThemeIcon size={20} variant="default" bd={0} bg="transparent">
+                        {React.createElement(getDefaultIcon(sectionName), { size: 20 })}
+                      </ThemeIcon>
                       <div>
                         <Text
                           fw={500}
                           style={{
                             textDecoration:
-                              searchParams.get(section.value) === "false" ? "line-through" : "none",
+                              searchParams.get(sectionName) === "false" ? "line-through" : "none",
                           }}
                         >
-                          {section.label}
-                          {searchParams.get(section.value) === "false" && " (Not Applicable)"}
+                          {fields[0]?.label || sectionName}
+                          {searchParams.get(sectionName) === "false" && " (Not Applicable)"}
                         </Text>
                         <Text size="sm" c="dimmed">
-                          {section.description}
+                          {fields[0]?.description || ""}
                         </Text>
                       </div>
                     </Group>
-                    {completedSections.includes(section.value) && (
+                    {completedSections.includes(sectionName) && (
                       <ThemeIcon color="green" size="sm" variant="light">
                         <IconCheck size={14} />
                       </ThemeIcon>
@@ -339,23 +273,23 @@ export function AccountantForm() {
                       <Group>
                         <Text>Would this section be applicable to you?</Text>
                         <Switch
-                          checked={applicableSections[section.value]}
+                          checked={applicableSections[sectionName]}
                           onChange={(e) => {
                             e.stopPropagation();
-                            handleApplicabilityChange(section.value, e.currentTarget.checked);
+                            handleApplicabilityChange(sectionName, e.currentTarget.checked);
                           }}
                         />
                       </Group>
                       <Textarea
                         label="Remarks"
                         placeholder="Add any notes or remarks about this section"
-                        {...register(`sections.${section.value}.remark`)}
+                        {...register(`sections.${sectionName}.remark`)}
                       />
                     </Stack>
-                    {applicableSections[section.value] && (
+                    {applicableSections[sectionName] && (
                       <Stack gap="md">
                         {renderFormSection(
-                          section.value,
+                          sectionName,
                           register,
                           setValue,
                           errors,
@@ -367,7 +301,8 @@ export function AccountantForm() {
                             } else {
                               setCompletedSections((prev) => prev.filter((s) => s !== section));
                             }
-                          }
+                          },
+                          initialConfig.fields[sectionName]
                         )}
                       </Stack>
                     )}

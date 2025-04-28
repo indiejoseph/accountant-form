@@ -1,8 +1,17 @@
+import { getFormConfig } from "@/app/[id]/page";
 import { AccountantForm } from "@/components/AccountantForm";
 import { Container, LoadingOverlay } from "@mantine/core";
 import { Suspense } from "react";
 
-export default function Home() {
+// Default table ID for the root page (first sheet in the workbook)
+const DEFAULT_TABLE_ID = "0";
+
+export default async function Home() {
+  if (!process.env.NEXT_PUBLIC_DEFAULT_FORM_ID) {
+    throw new Error("NEXT_PUBLIC_DEFAULT_FORM_ID is not set");
+  }
+
+  const config = await getFormConfig(DEFAULT_TABLE_ID);
   return (
     <div className="min-h-screen bg-gray-50">
       <Suspense
@@ -12,7 +21,7 @@ export default function Home() {
           </Container>
         }
       >
-        <AccountantForm />
+        <AccountantForm initialConfig={config} />
       </Suspense>
     </div>
   );
