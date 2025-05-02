@@ -37,6 +37,7 @@ interface FieldProps {
   setValue: UseFormSetValue<FormValues>;
   onUpdateComplete?: OnUpdateComplete;
   error?: { message?: string };
+  isSubmitting?: boolean;
 }
 
 function FileUploadField({
@@ -46,6 +47,7 @@ function FileUploadField({
   setValue,
   onUpdateComplete,
   error,
+  isSubmitting,
 }: FieldProps) {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -79,7 +81,8 @@ function FileUploadField({
           }
         }
       }}
-      loading={isUploading}
+      loading={isUploading || isSubmitting}
+      disabled={isSubmitting}
       onReject={(files) => {
         const file = files[0];
         const { code } = file.errors[0];
@@ -194,7 +197,8 @@ export function renderFormSection(
   setValue: UseFormSetValue<FormValues>,
   errors: Record<string, { message?: string }>,
   onUpdateComplete?: OnUpdateComplete,
-  fields?: Array<{ label: string; description: string }>
+  fields?: Array<{ label: string; description: string }>,
+  isSubmitting?: boolean
 ) {
   const getFieldId = (label: string) =>
     label
@@ -217,6 +221,7 @@ export function renderFormSection(
       setValue={setValue}
       onUpdateComplete={onUpdateComplete}
       error={errors[field.name]}
+      isSubmitting={isSubmitting}
     />
   ));
 }
