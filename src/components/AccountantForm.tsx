@@ -9,6 +9,7 @@ import {
   Container,
   Group,
   LoadingOverlay,
+  Modal,
   Paper,
   Progress,
   Stack,
@@ -43,7 +44,8 @@ import { type FormValues, renderFormSection } from "./FormSections";
 
 function getDefaultPeriod() {
   const currentYear = new Date().getFullYear();
-  return `${currentYear - 1}-${currentYear}`;
+  // Always set to next year's period (e.g., in 2024 it would be "2024-2025")
+  return `${currentYear}-${currentYear + 1}`;
 }
 
 interface FormSection {
@@ -58,7 +60,9 @@ interface FormSection {
 
 const formSchema = z.object({
   client: z.string().min(1, "Client name is required"),
-  period: z.string().min(1, "Period is required"),
+  period: z
+    .string()
+    .regex(/^[0-9]{4}-[0-9]{4}$/, "Period must be in format YYYY-YYYY (e.g., 2024-2025)"),
   sections: z.record(
     z.object({
       isApplicable: z.boolean(),
@@ -94,6 +98,7 @@ export function AccountantForm({ initialConfig }: AccountantFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedSections, setCompletedSections] = useState<string[]>([]);
   const [applicableSections, setApplicableSections] = useState<Record<string, boolean>>({});
+  const [showThankYou, setShowThankYou] = useState(false);
 
   const searchParams = useSearchParams();
 
@@ -151,7 +156,14 @@ export function AccountantForm({ initialConfig }: AccountantFormProps) {
   // Update form values when URL params change
   useEffect(() => {
     setValue("client", searchParams.get("client") || "");
-    setValue("period", searchParams.get("period") || getDefaultPeriod());
+
+    // Validate period from URL params
+    const urlPeriod = searchParams.get("period");
+    if (urlPeriod && /^[0-9]{4}-[0-9]{4}$/.test(urlPeriod)) {
+      setValue("period", urlPeriod);
+    } else {
+      setValue("period", getDefaultPeriod());
+    }
   }, [searchParams, setValue]);
 
   const applicableSectionCount = Object.keys(initialConfig.fields).filter(
@@ -180,18 +192,38 @@ export function AccountantForm({ initialConfig }: AccountantFormProps) {
           onSubmit={handleSubmit(async (data) => {
             setIsSubmitting(true);
             try {
-              // Simulate API call
-              await new Promise((resolve) => setTimeout(resolve, 2000));
+              const formData = new FormData();
+              formData.append("client", data.client);
+              formData.append("period", data.period);
+
+              // Collect all files from applicable sections
+              for (const [sectionName, section] of Object.entries(data.sections)) {
+                if (section.isApplicable && section.files) {
+                  for (const [fieldName, file] of Object.entries(section.files)) {
+                    if (file) {
+                      // Include section and field name in the form data
+                      formData.append("files", file);
+                      formData.append("fileFields", `${sectionName}/${fieldName}`);
+                    }
+                  }
+                }
+              }
+
+              const response = await fetch("/api/submit", {
+                method: "POST",
+                body: formData,
+              });
+
+              if (!response.ok) {
+                throw new Error("Failed to submit form");
+              }
+
               // Mark applicable sections as completed
               setCompletedSections(
                 Object.keys(initialConfig.fields).filter((s) => applicableSections[s])
               );
-              console.log("Form data with files:", data);
-              notifications.show({
-                title: "Success",
-                message: "Form submitted successfully",
-                color: "green",
-              });
+
+              setShowThankYou(true);
             } catch (error) {
               notifications.show({
                 title: "Error",
@@ -347,6 +379,28 @@ export function AccountantForm({ initialConfig }: AccountantFormProps) {
           </Stack>
         </form>
       </Paper>
+
+      <Modal
+        opened={showThankYou}
+        onClose={() => setShowThankYou(false)}
+        title="Thank You!"
+        centered
+        size="md"
+      >
+        <Stack gap="md" py="md">
+          <Text>
+            Thank you for submitting your documents. They have been successfully uploaded and sent
+            via email.
+          </Text>
+          <Text>
+            We will review your submission and get back to you if we need any additional
+            information.
+          </Text>
+          <Button onClick={() => setShowThankYou(false)} fullWidth>
+            Close
+          </Button>
+        </Stack>
+      </Modal>
     </Container>
   );
 }
